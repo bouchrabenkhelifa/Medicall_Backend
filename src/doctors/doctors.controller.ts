@@ -10,8 +10,5 @@ export class DoctorsController {
     return this.doctorsService.findAllDoctors();
   }
 
-  @Get('users')
-  async findAllUsers() {
-    return this.doctorsService.findAllUsers();
-  }
+
 }
