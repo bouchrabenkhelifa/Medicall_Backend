@@ -1,45 +1,93 @@
-import { Injectable } from '@nestjs/common';
-import { createClient } from '@supabase/supabase-js';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, ConflictException, InternalServerErrorException,Post } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { UsersService } from '../users/users.service';
+import { SignupDto } from './dto/signup.dto';
+import * as bcrypt from 'bcrypt';
+import axios from 'axios';
 
 @Injectable()
 export class AuthService {
-  private supabase;
+  private readonly hunterApiKey = '28c97f15fd3421f0acb3305f152d7d2aed0aedd6'; 
+  constructor(
+    private usersService: UsersService,
+    private jwtService: JwtService,
+  ) {}
 
-  constructor(private configService: ConfigService) {
-    this.supabase = createClient(
-      this.configService.get<string>('SUPABASE_URL')!,
-      this.configService.get<string>('SUPABASE_KEY')!
-    );
+  async validateUser(email: string, password: string): Promise<any> {
+    const user = await this.usersService.finduserByEmail(email);
+
+    if (user && user.password === password) {
+      const { password, ...result } = user;
+      return result;
+    }
+    return null;
   }
 
-  async signup(email: string, password: string) {
-    const { data, error } = await this.supabase.auth.signUp({
-      email,
-      password,
-    });
-
-    if (error) {
-      throw new Error(error.message);
-    }
-
-    return data.user; // OK
-  }
-
-  async signin(email: string, password: string) {
-    const { data, error } = await this.supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      console.error('Erreur de connexion :', error);
-      throw new Error('Identifiants de connexion invalides');
-    }
-
+  async login(user: any) {
+    const payload = { email: user.email, sub: user.id };
     return {
-      user: data.user,
-      access_token: data.session?.access_token,
+      access_token: this.jwtService.sign(payload),
     };
   }
+
+  async signup(signupDto: SignupDto) {
+    const { email, password, firstName, lastName, phone } = signupDto;
+    const role = signupDto.role || 'user'; 
+    const isEmailValid = await this.verifyEmailWithHunter(email);
+    if (!isEmailValid) {
+      throw new ConflictException('Email invalide .');
+    }
+    const existingUser = await this.usersService.finduserByEmail(email);
+    if (existingUser) {
+      throw new ConflictException('Utilisateur existe déjà');
+    }
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const { data } = await this.usersService.createUser({
+      email,
+      password: hashedPassword,
+      first_name: firstName,
+      family_name: lastName,
+      phone,
+      role,
+    });
+
+    return { message: 'Utilisateur créé avec succès', user: data };
+  }
+
+  private async verifyEmailWithHunter(email: string): Promise<boolean> {
+    try {
+      const response = await axios.get(`https://api.hunter.io/v2/email-verifier`, {
+        params: {
+          email,
+          api_key: this.hunterApiKey,
+        },
+      });
+
+      const verificationResult = response.data.data.result; 
+      return verificationResult === 'deliverable';
+    } catch (error) {
+      console.error('Error verifying email with Hunter.io:', error.message);
+      throw new InternalServerErrorException('Email verification failed.');
+    }
+  }
+
+  async findOrCreateGoogleUser(googleUser: any) {
+    const { email, firstName, lastName, picture } = googleUser;
+
+    let user = await this.usersService.finduserByEmail(email);
+
+    if (!user) {
+      user = await this.usersService.createUser({
+        email,
+        password: '',
+        first_name: firstName,
+        family_name: lastName,
+        phone: '',
+        role: 'user',
+      }).then(res => res.data);
+    }
+
+    return user; 
+}
+
 }

@@ -6,7 +6,6 @@ import { join } from 'path';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // Ajouter ceci :
   app.useStaticAssets(join(__dirname, '..', 'pics'), {
     prefix: '/pics/',
   });
