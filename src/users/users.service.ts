@@ -56,7 +56,7 @@ export class UsersService {
   async findUserById(id: number) {
     const { data, error } = await this.supabase
       .from('user')     
-      .select('*')
+      .select('id,first_name,family_name,phone,email,address,role')
       .eq('id', id)
       .single();     
 
@@ -67,4 +67,5 @@ export class UsersService {
 
     return data;
   }
+
 }

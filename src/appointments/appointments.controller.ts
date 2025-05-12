@@ -13,4 +13,10 @@ export class AppointmentsController {
   async findByDoctor(@Query('doctorId') doctorId: number) {
     return this.appointmentsService.getAppointmentsByDoctor(doctorId);
   }
+
+  @Get(':id')
+async findById(@Param('id') id: number) {
+  return this.appointmentsService.getAppointmentById(id);
+}
+
 }

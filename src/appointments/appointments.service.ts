@@ -102,5 +102,51 @@ export class AppointmentsService {
   
     return flattenedData;
   }
+  async getAppointmentById(id: number) {
+    const { data, error } = await this.supabase
+      .from('appointment')
+      .select(`
+        id,
+        doctor_id,
+        patient_id,
+        date_time,
+        status,
+        qr_code,
+        created_at,
+        patient(
+          user_id,
+          birthdate,
+          user(
+            phone,
+            first_name,
+            family_name
+          )
+        )
+      `)
+      .eq('id', id)
+      .single(); 
   
+    if (error) {
+      console.error(error);
+      throw new Error('Erreur lors de la récupération du rendez-vous');
+    }
+  
+    const appointment = {
+      id: data.id,
+      doctor_id: data.doctor_id,
+      patient_id: data.patient_id,
+      date_time: data.date_time,
+      status: data.status,
+      qr_code: data.qr_code,
+      created_at: data.created_at,
+      user_id: data.patient?.user_id || null,
+      birthdate: data.patient?.birthdate || null,
+      first_name: data.patient?.user?.first_name || null,
+      family_name: data.patient?.user?.family_name || null,
+      phone: data.patient?.user?.phone || null,
+    };
+  
+    return appointment;
+  }
+   
 }  

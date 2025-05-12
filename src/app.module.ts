@@ -8,6 +8,7 @@ import { AppointmentsModule } from './appointments/appointments.module';
 
 
 @Module({
+  
   imports: [
     ConfigModule.forRoot({ isGlobal: true }), 
     DoctorsModule, AuthModule, UsersModule, PrescriptionsModule, AppointmentsModule, 
