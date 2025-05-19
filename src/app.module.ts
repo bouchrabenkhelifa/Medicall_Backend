@@ -10,7 +10,7 @@ import { AppointmentsModule } from './Appointments/appointments.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }), 
-    DoctorsModule, AuthModule, UsersModule, AppointmentsModule
+    DoctorsModule, AuthModule, UsersModule, AppointmentsModule,
   ],
 })
 export class AppModule {}

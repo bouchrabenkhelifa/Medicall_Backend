@@ -1,21 +1,16 @@
 /* eslint-disable prettier/prettier */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable prettier/prettier */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable prettier/prettier */
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
-import { AppointmentsController } from './appointments.controller';
 import { AppointmentsService } from './appointments.service';
-import { Appointment } from './entities/appointment.entity';
-import { DoctorsModule } from '../doctors/doctors.module';
+import { DoctorsModule } from 'src/doctors/doctors.module';
+import { AppointmentsController } from './appointments.controller';
+
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Appointment]),
-    DoctorsModule, // Import DoctorsModule to use its service
+   imports: [
+    DoctorsModule,
   ],
   controllers: [AppointmentsController],
   providers: [AppointmentsService],
+  exports:[AppointmentsService]
 })
 export class AppointmentsModule {}

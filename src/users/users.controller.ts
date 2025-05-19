@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable prettier/prettier */
 import { Controller, Get, Query, Param } from '@nestjs/common'; 
 import { UsersService } from '../users/users.service';
 

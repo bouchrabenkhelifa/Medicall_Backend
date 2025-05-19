@@ -65,7 +65,11 @@ export class BitOperationsUtil {
       if (slotPosition < 0 || slotPosition >= 48) {
         return bitString;
       }
-      return bitString.substring(0, slotPosition) + '0' + bitString.substring(slotPosition + 1);
+      console.log("debug")
+      console.log(bitString.substring(0, slotPosition))
+      console.log(bitString.substring(slotPosition + 1))
+
+      return bitString.substring(0, slotPosition) + '0' + bitString.substring(slotPosition, 48);
     }
   
     /**

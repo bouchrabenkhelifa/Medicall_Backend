@@ -1,9 +1,4 @@
 /* eslint-disable prettier/prettier */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable prettier/prettier */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable prettier/prettier */
 import { Entity, PrimaryColumn, Column} from 'typeorm';
 
 @Entity('doctor')
@@ -44,4 +39,34 @@ export class Doctor {
 export class ResponseDto {
   status: string;
   message: string;
+}
+export class SlotTime{
+  slot: number;
+  time: string;
+}
+export class CreateOrUpdateDoctorDto {
+  user_id: number;
+  specialty: string;
+  photo?: string;
+  contact?: string;
+  experience?: number;
+  availability?: string;
+  clinic_id: number; 
+  facebook?: string;
+  instagram?: string;
+  linkedin?: string;
+  workonweekend?: boolean;
+}
+
+export class BreakTimeDto {
+  start_time: string;
+  end_time: string;
+}
+
+export class WorkingDayDto {
+  day: string;
+  is_working: boolean;
+  start_time?: string;
+  end_time?: string;
+  break_times?: BreakTimeDto[];
 }
