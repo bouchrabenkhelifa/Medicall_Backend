@@ -35,6 +35,10 @@ export class DoctorsController {
   doctorService: any;
   constructor(private readonly doctorsService: DoctorsService) {}
 
+    @Get()
+  async findAllDoctors() {
+    return this.doctorsService.findAllDoctors();
+  }
 
   @Post('/slots')
   async setDoctorSlots(@Body() createDto: CreateDoctorSlotsDto) {
@@ -67,7 +71,7 @@ async getAvailableSlotsForDate(
   }
 
  
-  @Post('upload-photo')
+  /*@Post('upload-photo')
   @UseInterceptors(
     FileInterceptor('photo', {
       storage: diskStorage({
@@ -89,7 +93,7 @@ async getAvailableSlotsForDate(
         cb(null, true);
       },
     }),
-  )
+  )*/
   /*async uploadDoctorPhoto(
     @UploadedFile() file: Express.Multer.File,
     @Body('doctorId') doctorId: number,
@@ -119,9 +123,9 @@ async getAvailableSlotsForDate(
   }
 
 }
-function diskStorage(arg0: { destination: string; filename: (req: any, file: any, cb: any) => void; }): any {
+/*function diskStorage(arg0: { destination: string; filename: (req: any, file: any, cb: any) => void; }): any {
   throw new Error('Function not implemented.');
-}
+}*/
 
 function uuidv4() {
   throw new Error('Function not implemented.');

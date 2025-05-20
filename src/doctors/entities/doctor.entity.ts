@@ -50,7 +50,7 @@ export class CreateOrUpdateDoctorDto {
   photo?: string;
   contact?: string;
   experience?: number;
-  availability?: string;
+  availability?: number;
   clinic_id: number; 
   facebook?: string;
   instagram?: string;

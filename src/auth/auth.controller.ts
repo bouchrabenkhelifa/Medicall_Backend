@@ -1,3 +1,8 @@
+/* eslint-disable @typescript-eslint/require-await */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable prettier/prettier */
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { Controller, Post, Body, Get, UseGuards, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { Injectable, ConflictException, InternalServerErrorException } from '@nestjs/common';
@@ -10,6 +15,7 @@ export class AuthController {
 
   @Post('login')
   async login(@Body() body: { email: string; password: string }) {
+    console.log("Heereee")
     const user = await this.authService.validateUser(body.email, body.password);
     if (!user) {
       return { message: 'Email ou mot de passe incorrect' };

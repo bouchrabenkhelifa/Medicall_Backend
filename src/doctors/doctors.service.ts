@@ -24,7 +24,43 @@ export class DoctorsService {
       this.configService.get<string>('SUPABASE_KEY')!
     );
   }
+async findAllDoctors() {
+  // Fetch doctors with clinic address (join in a single query)
+  const { data: doctorsWithClinics, error: doctorError } = await this.supabase
+    .from('doctor')
+    .select(`
+      *,
+      clinic:clinic_id (address)  // Only select address from clinic
+    `);
 
+  // Fetch users
+  const { data: users, error: userError } = await this.supabase
+    .from('user')
+    .select('*');
+
+  if (doctorError || userError) {
+    throw new Error('Error fetching data');
+  }
+
+  // Merge data and flatten clinic address
+  return doctorsWithClinics.map(doc => {
+    const user = users.find(u => u.id === doc.user_id);
+    
+    return {
+      user_id: doc.user_id,
+      specialty: doc.specialty,
+      photo: doc.photo,
+      contact: doc.contact,
+      experience: doc.experience,
+      address: doc.clinic?.address,
+      first_name: user?.first_name,
+      family_name: user?.family_name,
+      email: user?.email,
+      phone: user?.phone,
+      user_address: user?.address,
+    };
+  });
+}
   async setDoctorSlots(createDto: CreateDoctorSlotsDto): Promise<ResponseDto> {
     try {
       const { doctorId, slotRanges } = createDto;
