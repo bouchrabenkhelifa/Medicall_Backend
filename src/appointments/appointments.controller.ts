@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Param } from '@nestjs/common'; 
+import { Controller, Get,Patch, Query, Param, ParseIntPipe,HttpException,HttpStatus } from '@nestjs/common'; 
 import { AppointmentsService } from './appointments.service';
 
 @Controller('appointments')
@@ -18,5 +18,10 @@ export class AppointmentsController {
 async findById(@Param('id') id: number) {
   return this.appointmentsService.getAppointmentById(id);
 }
+ @Patch('cancel/:id')
+  async cancelAppointment(@Param('id') id: string) {
+    return this.appointmentsService.cancelAppointment(+id);
+  }
 
 }
+

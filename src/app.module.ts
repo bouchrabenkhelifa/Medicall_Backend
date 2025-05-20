@@ -5,13 +5,14 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { PrescriptionsModule } from './prescriptions/prescriptions.module';
 import { AppointmentsModule } from './appointments/appointments.module';
+import { FirebaseModule } from './firebase/firebase.module';
 
 
 @Module({
   
   imports: [
     ConfigModule.forRoot({ isGlobal: true }), 
-    DoctorsModule, AuthModule, UsersModule, PrescriptionsModule, AppointmentsModule, 
+    DoctorsModule, AuthModule, UsersModule, PrescriptionsModule, AppointmentsModule, FirebaseModule, 
   ],
 })
 export class AppModule {}

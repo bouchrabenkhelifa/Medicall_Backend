@@ -37,7 +37,7 @@ export class UsersService {
     return { data };
   }
   
-  
+
   async finduserByEmail(email: string) {
     const { data, error } = await this.supabase
       .from('user')    

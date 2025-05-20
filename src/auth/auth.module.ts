@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { UsersService } from '../users/users.service'; // Tu as déjà UsersService
+import { UsersService } from '../users/users.service'; 
 import { AuthController } from './auth.controller';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -16,7 +16,7 @@ import { GoogleStrategy } from './strategies/google.strategy';
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '1h' }, // Token expire en 1 heure
+        signOptions: { expiresIn: '1h' }, 
       }),
     }),
   ],
