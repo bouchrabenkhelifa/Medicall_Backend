@@ -12,56 +12,54 @@ export class UsersService {
       this.configService.get<string>('SUPABASE_KEY')!
     );
   }
+
   async createUser(userData: {
     email: string;
     password: string;
     first_name: string;
     family_name: string;
     phone: string;
-    role: string;  
+    role: string;
   }) {
     const { email, password, first_name, family_name, phone, role } = userData;
-        const { data, error } = await this.supabase
+    const { data, error } = await this.supabase
       .from('user')
-      .insert([
-        { email, password, first_name, family_name, phone, role }  
-      ])
+      .insert([{ email, password, first_name, family_name, phone, role }])
       .select()
       .single();
-    
+
     if (error) {
       console.error('Erreur Supabase (createUser) :', error);
       throw new Error('Erreur Supabase lors de la création de l\'utilisateur');
     }
-    
+
     return { data };
   }
-  
-  
-  async finduserByEmail(email: string) {
+
+  async findByEmail(email: string) {
     const { data, error } = await this.supabase
-      .from('user')    
+      .from('user')
       .select('*')
       .eq('email', email)
-      .single();     
+      .single();
 
     if (error) {
-      console.error('Erreur Supabase (email) :', error);
+      console.error('Erreur Supabase (findByEmail) :', error.message);
       return null;
     }
 
     return data;
   }
 
-  async findUserById(id: number) {
+    async findUserById(id: number) {
     const { data, error } = await this.supabase
-      .from('user')     
+      .from('user')
       .select('*')
       .eq('id', id)
-      .single();     
+      .single();
 
     if (error) {
-      console.error('Erreur Supabase (id) :', error);
+      console.error('Erreur Supabase (findUserById) :', error);
       return null;
     }
 
