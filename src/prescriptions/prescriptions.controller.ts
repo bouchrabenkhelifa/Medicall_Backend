@@ -74,37 +74,48 @@ export class PrescriptionsController {
   ) {
     return this.prescriptionsService.deleteMedicationFromPrescription(id, medicationId);
   }
-@Get(':id/pdf')
-@Header('Content-Type', 'application/pdf')
-async downloadPrescriptionPdf(
-  @Param('id', ParseIntPipe) id: number,
-  @Res() res: Response
-) {
-  try {
-    const pdfBuffer = await this.prescriptionsService.generatePrescriptionPdf(id);
-    
-    // Get prescription details for the filename
-    const prescription = await this.prescriptionsService.findPrescriptionById(id);
-    const patientName = prescription.patient_name || 'Unknown_Patient';
-    const fileName = `prescription_${id}_${patientName.replace(/\s+/g, '_')}.pdf`;
-    
-    // Set headers for file download
-    res.set({
-      'Content-Type': 'application/pdf',
-      'Content-Disposition': `attachment; filename="${fileName}"`,
-      'Content-Length': pdfBuffer.length.toString() // Ensure this is a string
-    });
-    
-    // Send the PDF buffer correctly
-    res.end(pdfBuffer);
-  } catch (error) {
-    console.error('Error generating or sending PDF:', error);
-    res.status(500).json({ 
-      message: 'Error generating PDF', 
-      error: error.message 
-    });
+ @Get(':id/pdf')
+  @Header('Content-Type', 'application/pdf')
+  async downloadPrescriptionPdf(
+    @Param('id', ParseIntPipe) id: number,
+    @Res() res: Response
+  ) {
+    try {
+      const pdfBuffer = await this.prescriptionsService.generatePrescriptionPdf(id);
+      
+      // Get prescription details for the filename
+      const prescription = await this.prescriptionsService.findPrescriptionById(id);
+      
+      // Use first name and family name if available
+      let fileName = `prescription_${id}`;
+      
+      if (prescription.patient_first_name && prescription.patient_family_name) {
+        fileName += `_${prescription.patient_first_name}_${prescription.patient_family_name}`;
+      } else if (prescription.patient_name) {
+        fileName += `_${prescription.patient_name.replace(/\s+/g, '_')}`;
+      } else {
+        fileName += '_Unknown_Patient';
+      }
+      
+      fileName += '.pdf';
+      
+      // Set headers for file download
+      res.set({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="${fileName}"`,
+        'Content-Length': pdfBuffer.length.toString() // Ensure this is a string
+      });
+      
+      // Send the PDF buffer correctly
+      res.end(pdfBuffer);
+    } catch (error) {
+      console.error('Error generating or sending PDF:', error);
+      res.status(500).json({ 
+        message: 'Error generating PDF', 
+        error: error.message 
+      });
+    }
   }
-}
   @Get('debug')
 async debugPrescriptions() {
   try {

@@ -53,14 +53,32 @@ export class PdfService {
           .stroke()
           .moveDown(1);
 
-        // Patient Information
+        // Patient Information with detailed name fields and age
         doc
           .fontSize(16)
           .text('Patient Information')
           .moveDown(0.5);
 
         doc.fontSize(12);
-        doc.text(`Patient: ${prescriptionData.patientName || 'Unknown'}`);
+        
+        // Display detailed patient information if available
+        if (prescriptionData.patientFirstName || prescriptionData.patientFamilyName) {
+          // If we have first name and family name
+          const firstName = prescriptionData.patientFirstName || '';
+          const familyName = prescriptionData.patientFamilyName || '';
+          doc.text(`Full Name : ${firstName} ${familyName}`);
+          
+          // Show full name if it's different from first+family combination
+          const fullName = prescriptionData.patientName || '';
+          if (fullName && fullName !== `${firstName} ${familyName}` && fullName !== 'Unknown Patient') {
+            doc.text(`Full Name: ${fullName}`);
+          }
+        } else {
+          // Fallback to the original patient name
+          doc.text(`Patient: ${prescriptionData.patientName || 'Unknown'}`);
+        }
+        
+        // Display age with preference for the calculated age
         if (prescriptionData.patientAge) {
           doc.text(`Age: ${prescriptionData.patientAge}`);
         }

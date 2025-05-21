@@ -34,39 +34,7 @@ export class PrescriptionsService {
     return data;
   }
 
-  async findPrescriptionById(id: number) {
-    // Get prescription with related appointment and patient data
-    const { data: prescription, error } = await this.supabase
-      .from('prescription')
-      .select(`
-        *
-      `)
-      .eq('id', id)
-      .single();
-    
-    if (error || !prescription) {
-      throw new NotFoundException(`Prescription with ID ${id} not found`);
-    }
-    
-    // Get medication for this prescription
-    const { data: medications, error: medError } = await this.supabase
-      .from('medication')
-      .select('*')
-      .eq('prescription_id', id);
-    
-    if (medError) throw medError;
-    
-    // Restructure the data to make it easier to work with
-    const result = {
-      ...prescription,
-      patient_name: prescription.appointments?.patients?.name || 'Unknown Patient',
-      patient_age: prescription.appointments?.patients?.age,
-      diagnosis: prescription.appointments?.diagnosis,
-      medications: medications || []
-    };
-    
-    return result;
-  }
+
 
   async findMedicationsByPrescription(id: number) {
     const { data, error } = await this.supabase
@@ -265,59 +233,111 @@ export class PrescriptionsService {
     return { deleted: true };
   }
 
-  async generatePrescriptionPdf(id: number): Promise<Buffer> {
-  try {
-    // First check if the prescription exists
-    const { data: prescriptionExists, error: checkError } = await this.supabase
+ 
+  async findPrescriptionById(id: number) {
+    // Get prescription with related appointment and patient data
+    const { data: prescription, error } = await this.supabase
       .from('prescription')
-      .select('id')
+      .select(`
+        *
+      `)
       .eq('id', id)
       .single();
     
-    if (checkError || !prescriptionExists) {
-      console.error(`Prescription with ID ${id} not found in direct check`);
+    if (error || !prescription) {
       throw new NotFoundException(`Prescription with ID ${id} not found`);
     }
     
-    console.log(`Found prescription ${id}, now getting full details...`);
+    // Get medication for this prescription
+    const { data: medications, error: medError } = await this.supabase
+      .from('medication')
+      .select('*')
+      .eq('prescription_id', id);
     
-    // Get the prescription with all necessary data
-    const prescription = await this.findPrescriptionById(id);
+    if (medError) throw medError;
     
-    if (!prescription) {
-      console.error(`Prescription with ID ${id} found but couldn't get details`);
-      throw new NotFoundException(`Could not get details for prescription with ID ${id}`);
-    }
+    // Get detailed patient information using the SQL query
+    const { data: patientDetails, error: patientError } = await this.supabase.rpc(
+      'get_patient_details_for_prescription',
+      { prescription_id: id }
+    );
+
+    // If there's an error or no patient details, we'll use fallback values
+    const patientInfo = patientError || !patientDetails || patientDetails.length === 0 
+      ? null 
+      : patientDetails[0];
     
-    console.log(`Successfully retrieved full details for prescription ${id}`);
-    
-    // Prepare data for PDF generation with better fallbacks
-    const pdfData = {
-      id: prescription.id,
-      patientName: prescription.patient_name || prescription.appointments?.patients?.name || 'Unknown Patient',
-      patientAge: prescription.patient_age || prescription.appointments?.patients?.age || null,
-      date: prescription.created_at || new Date(),
-      diagnosis: prescription.diagnosis || prescription.appointments?.diagnosis || '',
-      instructions: prescription.name || '', // Using name as general instructions
-      medications: (prescription.medications || []).map(med => ({
-        name: med.name || 'Unnamed medication',
-        dosage: med.dosage || 'Not specified',
-        frequency: med.frequency || 'Not specified',
-        duration: med.duration || '',
-        instructions: med.instructions || '',
-        specialInstructions: ''  // Add any special instructions if needed
-      }))
+    // Restructure the data to make it easier to work with
+    const result = {
+      ...prescription,
+      patient_name: prescription.appointments?.patients?.name || 'Unknown Patient',
+      patient_age: prescription.appointments?.patients?.age,
+      diagnosis: prescription.appointments?.diagnosis,
+      medications: medications || [],
+      // Add new patient details
+      patient_first_name: patientInfo?.first_name,
+      patient_family_name: patientInfo?.family_name,
+      patient_calculated_age: patientInfo?.age
     };
     
-    console.log('Prescription data for PDF:', JSON.stringify(pdfData, null, 2));
-    
-    // Generate the PDF using the PdfService
-    const pdfBuffer = await this.pdfService.generatePrescriptionPdf(pdfData);
-    console.log('PDF generated successfully, buffer length:', pdfBuffer.length);
-    return pdfBuffer;
-  } catch (error) {
-    console.error('Error generating prescription PDF:', error);
-    throw error;
+    return result;
   }
-}
+
+  async generatePrescriptionPdf(id: number): Promise<Buffer> {
+    try {
+      // First check if the prescription exists
+      const { data: prescriptionExists, error: checkError } = await this.supabase
+        .from('prescription')
+        .select('id')
+        .eq('id', id)
+        .single();
+      
+      if (checkError || !prescriptionExists) {
+        console.error(`Prescription with ID ${id} not found in direct check`);
+        throw new NotFoundException(`Prescription with ID ${id} not found`);
+      }
+      
+      console.log(`Found prescription ${id}, now getting full details...`);
+      
+      // Get the prescription with all necessary data
+      const prescription = await this.findPrescriptionById(id);
+      
+      if (!prescription) {
+        console.error(`Prescription with ID ${id} found but couldn't get details`);
+        throw new NotFoundException(`Could not get details for prescription with ID ${id}`);
+      }
+      
+      console.log(`Successfully retrieved full details for prescription ${id}`);
+      
+      // Prepare data for PDF generation with better fallbacks
+      const pdfData = {
+        id: prescription.id,
+        patientName: prescription.patient_name || prescription.appointments?.patients?.name || 'Unknown Patient',
+        patientAge: prescription.patient_calculated_age || prescription.patient_age || prescription.appointments?.patients?.age || null,
+        patientFirstName: prescription.patient_first_name || '',
+        patientFamilyName: prescription.patient_family_name || '',
+        date: prescription.created_at || new Date(),
+        diagnosis: prescription.diagnosis || prescription.appointments?.diagnosis || '',
+        instructions: prescription.name || '', // Using name as general instructions
+        medications: (prescription.medications || []).map(med => ({
+          name: med.name || 'Unnamed medication',
+          dosage: med.dosage || 'Not specified',
+          frequency: med.frequency || 'Not specified',
+          duration: med.duration || '',
+          instructions: med.instructions || '',
+          specialInstructions: ''  // Add any special instructions if needed
+        }))
+      };
+      
+      console.log('Prescription data for PDF:', JSON.stringify(pdfData, null, 2));
+      
+      // Generate the PDF using the PdfService
+      const pdfBuffer = await this.pdfService.generatePrescriptionPdf(pdfData);
+      console.log('PDF generated successfully, buffer length:', pdfBuffer.length);
+      return pdfBuffer;
+    } catch (error) {
+      console.error('Error generating prescription PDF:', error);
+      throw error;
+    }
+  }
 }
