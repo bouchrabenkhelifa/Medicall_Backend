@@ -44,29 +44,28 @@ export class SlotTime{
   slot: number;
   time: string;
 }
-export class CreateOrUpdateDoctorDto {
-  user_id: number;
+export class UpdateDoctorDto {
+  userId: number;
   specialty: string;
-  photo?: string;
   contact?: string;
   experience?: number;
-  availability?: number;
-  clinic_id: number; 
+  workOnWeekend: boolean;
+  workEveryDay: boolean;
   facebook?: string;
   instagram?: string;
   linkedin?: string;
-  workonweekend?: boolean;
+  clinicAddress: string;
+  clinicName: string;
+  clinicMap?: string;
+  breakstart: string;
+  breakend: string;
+  startworkTime: string;
+  endworkTime: string;
+  workingDays: WorkingDayDto[];
 }
-
-export class BreakTimeDto {
-  start_time: string;
-  end_time: string;
-}
-
 export class WorkingDayDto {
   day: string;
-  is_working: boolean;
-  start_time?: string;
-  end_time?: string;
-  break_times?: BreakTimeDto[];
+  isWorking: boolean;
+  startTime?: string;
+  endTime?: string;
 }

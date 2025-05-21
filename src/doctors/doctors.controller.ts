@@ -22,17 +22,17 @@ export class DoctorsController {
 
 }
 */
-import { Controller, Get, Post, Body, Query, Param, Put, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Param, Put, UseInterceptors, HttpCode, HttpStatus, UploadedFile, Req, BadRequestException } from '@nestjs/common';
 import { DoctorsService } from './doctors.service';
+import { ApiBody, ApiConsumes, ApiOperation, ApiParam } from '@nestjs/swagger';
 import { CreateDoctorSlotsDto } from '../Appointments/dto/create_doctor_slot.dto';
 import { ParseIntPipe } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { extname } from 'path';
-import {  CreateOrUpdateDoctorDto, WorkingDayDto } from './entities/doctor.entity';
+import { UpdateDoctorDto } from './entities/doctor.entity';
 
 @Controller('doctors')
 export class DoctorsController {
-  doctorService: any;
   constructor(private readonly doctorsService: DoctorsService) {}
 
     @Get()
@@ -40,11 +40,8 @@ export class DoctorsController {
     return this.doctorsService.findAllDoctors();
   }
 
-  @Post('/slots')
-  async setDoctorSlots(@Body() createDto: CreateDoctorSlotsDto) {
-    return this.doctorsService.setDoctorSlots(createDto);
-  }
 
+//Get Doctor availabilty
   @Get(':id/:date/available-slots')
 async getAvailableSlotsForDate(
   @Param('id', ParseIntPipe) doctorId: number,
@@ -64,74 +61,35 @@ async getAvailableSlotsForDate(
     return this.doctorsService.getAvailableDates(doctorId, startDate, endDate);
   }
 
-  ///Profile Endpoints
-  @Get(':doctorId')
-  async getDoctorProfile(@Param('doctorId') doctorId: number) {
-    return this.doctorsService.getDoctorProfile(doctorId);
+//Get and Set doctor Information and availability
+@Post('update')
+@UseInterceptors(FileInterceptor('photo'))
+async updateDoctorProfile(
+  @Body() body: { data: string },
+  @UploadedFile() photo?: Express.Multer.File,
+) {
+  
+  if (!body?.data) {
+    throw new BadRequestException("Missing 'data' field");
   }
 
- 
-  /*@Post('upload-photo')
-  @UseInterceptors(
-    FileInterceptor('photo', {
-      storage: diskStorage({
-        destination: './uploads/doctor-photos',
-        filename: (req, file, cb) => {
-          // Generate unique file name
-          const uniqueName = `${uuidv4()}${extname(file.originalname)}`;
-          cb(null, uniqueName);
-        },
-      }),
-      limits: {
-        fileSize: 5 * 1024 * 1024, // 5MB limit
-      },
-      fileFilter: (req, file, cb) => {
-        // Accept only images
-        if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
-          return cb(new Error('Only image files are allowed'), false);
-        }
-        cb(null, true);
-      },
-    }),
-  )*/
-  /*async uploadDoctorPhoto(
-    @UploadedFile() file: Express.Multer.File,
-    @Body('doctorId') doctorId: number,
-  ) {
-    const photoUrl = `${process.env.API_URL}/uploads/doctor-photos/${file.filename}`;
-    await this.doctorService.updateDoctorPhoto(doctorId, photoUrl);
-    return { photo_url: photoUrl };
-  }*/
-
-  @Get(':doctorId/working-days')
-  async getDoctorWorkingDays(@Param('doctorId') doctorId: number) {
-    return this.doctorService.getDoctorWorkingDays(doctorId);
+  let doctorData: UpdateDoctorDto;
+  try {
+    doctorData = JSON.parse(body.data);
+  } catch (error) {
+    throw new BadRequestException("Invalid JSON in 'data' field");
   }
-
-  @Put(':doctorId/working-days')
-  async updateDoctorWorkingDays(
-    @Param('doctorId') doctorId: number,
-    @Body() workingDays: WorkingDayDto[],
-  ) {
-    return this.doctorService.updateDoctorWorkingDays(doctorId, workingDays);
+  // Ensure the service is available
+  if (!this.doctorsService) {
+    throw new Error('DoctorService not injected!');
   }
-  @Post('update')
-  async updateDoctorInfo(
-    @Body() doctor: CreateOrUpdateDoctorDto,
-  ) {
-    return this.doctorService.updateDoctorWorkingDays(CreateOrUpdateDoctorDto);
+  console.log(doctorData.workingDays)
+  return this.doctorsService.updateDoctorProfile(doctorData, photo);
+}
+
+  @Get(':id')
+  async getDoctorProfile(@Param('id', ParseIntPipe) id: number) {
+    return this.doctorsService.getDoctorProfile(id);
   }
 
 }
-/*function diskStorage(arg0: { destination: string; filename: (req: any, file: any, cb: any) => void; }): any {
-  throw new Error('Function not implemented.');
-}*/
-
-function uuidv4() {
-  throw new Error('Function not implemented.');
-}
-
-function UploadedFile(): (target: DoctorsController, propertyKey: "uploadDoctorPhoto", parameterIndex: 0) => void {
-  throw new Error('Function not implemented.');
-}
-
