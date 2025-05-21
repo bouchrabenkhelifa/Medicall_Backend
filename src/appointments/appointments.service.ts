@@ -175,14 +175,16 @@ async bookAppointment(
     const day = String(formattedDate.getDate()).padStart(2, '0');
     const dateOnly = `${year}-${month}-${day}`;
 
-    // Check for existing appointments with same doctor, patient, slot, and date
+    // Check if appointment already exists for same doctor, patient, slot, and date
+    // Using Postgres date_trunc to filter only by date part of date_time
     const { data: existingAppointments, error: checkError } = await this.supabase
       .from('appointment')
       .select('*')
       .eq('patient_id', patientId)
       .eq('doctor_id', doctorId)
       .eq('slot', slotPosition)
-      .filter('date_time::date', 'eq', dateOnly);
+      .gte('date_time', `${dateOnly}T00:00:00Z`) // Start of the day (UTC)
+      .lt('date_time', `${dateOnly}T23:59:59Z`); // End of the day (UTC)
 
     if (checkError) {
       console.error('Error checking existing appointments:', checkError);
@@ -200,17 +202,17 @@ async bookAppointment(
     const slotTime = BitOperationsUtil.slotToTimeString(slotPosition);
     const [timeStr, period] = slotTime.split(' ');
     const [hourStr, minuteStr] = timeStr.split(':');
-    let hours = parseInt(hourStr);
-    const minutes = parseInt(minuteStr);
+    let hours = parseInt(hourStr, 10);
+    const minutes = parseInt(minuteStr, 10);
 
-    // Convert to 24-hour format
+    // Convert 12h time to 24h time
     if (period === 'PM' && hours < 12) hours += 12;
     if (period === 'AM' && hours === 12) hours = 0;
 
-    // Final ISO string for insertion (YYYY-MM-DD HH:mm:ss)
-    const formattedDateTime = `${dateOnly} ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
+    // Compose final date_time string in ISO format
+    const formattedDateTime = `${dateOnly}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00Z`;
 
-    // Insert appointment
+    // Insert new appointment
     const { error: insertError } = await this.supabase
       .from('appointment')
       .insert([
@@ -220,7 +222,9 @@ async bookAppointment(
           date_time: formattedDateTime,
           slot: slotPosition,
           status: 'Confirmed',
-          qr_code: 'test', // Replace later with actual QR generation
+          qr_code: await this.generateQrCode(
+            `Doctor: ${doctorId}, Patient: ${patientId}, Date: ${formattedDateTime}`
+          ),
           created_at: new Date().toISOString(),
         },
       ]);
@@ -242,6 +246,7 @@ async bookAppointment(
     };
   }
 }
+
 
 
   // Function to cancel an existing appointment
