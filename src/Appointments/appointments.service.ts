@@ -1,29 +1,165 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable prettier/prettier */
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
-import { SupabaseClient, createClient } from '@supabase/supabase-js';
-import { BookAppointmentDto } from './dto/book_appointment.dto';
-import { DoctorsService } from '../doctors/doctors.service';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { createClient } from '@supabase/supabase-js';
 import { ConfigService } from '@nestjs/config';
 import { BitOperationsUtil } from './utils/bit-operations.util';
+import { BookAppointmentDto } from './dto/book_appointment.dto';
 
 @Injectable()
 export class AppointmentsService {
-  private readonly supabaseClient: SupabaseClient;
+  private supabase;
 
-  constructor(
-    private readonly configService: ConfigService,
-    private readonly doctorsService: DoctorsService,
-  ) {
-    // Initialize the Supabase client with environment variables
-    this.supabaseClient = createClient(
+  constructor(private configService: ConfigService) {
+    this.supabase = createClient(
       this.configService.get<string>('SUPABASE_URL')!,
-      this.configService.get<string>('SUPABASE_KEY')!,
+      this.configService.get<string>('SUPABASE_KEY')!
     );
   }
 
-//Function to book appointments
+  async GetAll() {
+    const { data, error } = await this.supabase
+      .from('appointment')
+      .select(`
+        id,
+        doctor_id,
+        patient_id,
+        date_time,
+        status,
+        qr_code,
+        created_at,
+        patient(
+          user_id,
+          birthdate,
+          user(
+            phone,
+            first_name,
+            family_name
+          )
+        )
+      `);
+  
+    if (error) {
+      console.error(error);
+      throw new Error('Erreur lors de la récupération des rendez-vous');
+    }
+  
+    // Aplatir ici
+    const flattenedData = data.map(appointment => ({
+      id: appointment.id,
+      doctor_id: appointment.doctor_id,
+      patient_id: appointment.patient_id,
+      date_time: appointment.date_time,
+      status: appointment.status,
+      qr_code: appointment.qr_code,
+      first_name: appointment.patient?.user?.first_name || null,
+      family_name: appointment.patient?.user?.family_name || null,
+      phone: appointment.patient?.user?.phone || null,
+    }));
+  
+    return flattenedData;
+  }
+
+
+  async getAppointmentsByDoctor(doctorId: number) {
+    const { data, error } = await this.supabase
+      .from('appointment')
+      .select(`
+        id,
+        doctor_id,
+        patient_id,
+        date_time,
+        status,
+        qr_code,
+        created_at,
+        patient(
+          user_id,
+          birthdate,
+          user(
+            phone,
+            first_name,
+            family_name
+          )
+        )
+      `)
+      .eq('doctor_id', doctorId);
+  
+    if (error) {
+      console.error(error);
+      throw new Error('Erreur lors de la récupération des rendez-vous');
+    }
+  
+    const flattenedData = data.map(appointment => ({
+      id: appointment.id,
+      doctor_id: appointment.doctor_id,
+      patient_id: appointment.patient_id,
+      date_time: appointment.date_time,
+      status: appointment.status,
+      qr_code: appointment.qr_code,
+      created_at: appointment.created_at,
+      user_id: appointment.patient?.user_id || null,
+      birthdate: appointment.patient?.birthdate || null,
+      first_name: appointment.patient?.user?.first_name || null,
+      family_name: appointment.patient?.user?.family_name || null,
+      phone: appointment.patient?.user?.phone || null,
+    }));
+  
+    return flattenedData;
+  }
+  async getAppointmentById(id: number) {
+    const { data, error } = await this.supabase
+      .from('appointment')
+      .select(`
+        id,
+        doctor_id,
+        patient_id,
+        date_time,
+        status,
+        qr_code,
+        created_at,
+        patient(
+          user_id,
+          birthdate,
+          user(
+            phone,
+            first_name,
+            family_name
+          )
+        )
+      `)
+      .eq('id', id)
+      .single(); 
+  
+    if (error) {
+      console.error(error);
+      throw new Error('Erreur lors de la récupération du rendez-vous');
+    }
+  
+    const appointment = {
+      id: data.id,
+      doctor_id: data.doctor_id,
+      patient_id: data.patient_id,
+      date_time: data.date_time,
+      status: data.status,
+      qr_code: data.qr_code,
+      created_at: data.created_at,
+      user_id: data.patient?.user_id || null,
+      birthdate: data.patient?.birthdate || null,
+      first_name: data.patient?.user?.first_name || null,
+      family_name: data.patient?.user?.family_name || null,
+      phone: data.patient?.user?.phone || null,
+    };
+  
+    return appointment;
+  }
+
+
+  //Booking Appointments
+  //Function to book appointments
  async bookAppointment(
   bookingDto: BookAppointmentDto,
 ): Promise<{ status: string; message: string }> {
@@ -37,7 +173,7 @@ export class AppointmentsService {
       const day = String(formattedDate.getDate()).padStart(2, '0');
       const dt = `${year}-${month}-${day}`;
     // First, check for existing appointments for this patient on the same date
-    const { data: existingAppointments, error: checkError } = await this.supabaseClient
+    const { data: existingAppointments, error: checkError } = await this.supabase
       .from('appointment')
       .select('*')
       .eq('patient_id', patientId)
@@ -79,7 +215,7 @@ export class AppointmentsService {
 
     console.log(formattedDateTime)
     // Insert the new appointment into the database
-    const { data, error } = await this.supabaseClient
+    const { data, error } = await this.supabase
       .from('appointment') 
       .insert([
         {
@@ -117,7 +253,7 @@ export class AppointmentsService {
   async cancelAppointment(id: number): Promise<{ status: string; message: string }> {
     try {
       // Find the appointment by ID
-      const { data: appointment, error } = await this.supabaseClient
+      const { data: appointment, error } = await this.supabase
         .from('appointment') // Replace with your actual table name
         .select('*')
         .eq('id', id)
@@ -128,7 +264,7 @@ export class AppointmentsService {
       }
 
       // Delete the appointment
-      const { error: deleteError } = await this.supabaseClient
+      const { error: deleteError } = await this.supabase
         .from('appointment')
         .delete()
         .eq('id', id);
@@ -152,4 +288,5 @@ export class AppointmentsService {
       };
     }
   }
-}
+   
+}  
