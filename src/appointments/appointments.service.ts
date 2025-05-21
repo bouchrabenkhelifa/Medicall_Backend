@@ -111,6 +111,7 @@ export class AppointmentsService {
     return flattenedData;
   }
   async getAppointmentById(id: number) {
+   
     const { data, error } = await this.supabase
       .from('appointment')
       .select(`
