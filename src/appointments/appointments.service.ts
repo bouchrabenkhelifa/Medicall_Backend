@@ -7,9 +7,9 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { createClient } from '@supabase/supabase-js';
 import { ConfigService } from '@nestjs/config';
-import { BitOperationsUtil } from './utils/bit-operations.util';
 import { BookAppointmentDto } from './dto/book_appointment.dto';
 import * as QRCode from 'qrcode';
+import { BitOperationsUtil } from './utils/bit-operations.util';
 
 @Injectable()
 export class AppointmentsService {
@@ -162,29 +162,27 @@ export class AppointmentsService {
 
   //Booking Appointments
   //Function to book appointments
+
 async bookAppointment(
   bookingDto: BookAppointmentDto,
-): Promise<{ status: string; message: string }> {
+): Promise<{ status: string; message: string; data?: any }> {
   try {
     const { doctorId, patientId, date, slotPosition } = bookingDto;
 
-    // Format the date part (YYYY-MM-DD)
     const formattedDate = new Date(date);
     const year = formattedDate.getFullYear();
     const month = String(formattedDate.getMonth() + 1).padStart(2, '0');
     const day = String(formattedDate.getDate()).padStart(2, '0');
     const dateOnly = `${year}-${month}-${day}`;
 
-    // Check if appointment already exists for same doctor, patient, slot, and date
-    // Using Postgres date_trunc to filter only by date part of date_time
     const { data: existingAppointments, error: checkError } = await this.supabase
       .from('appointment')
       .select('*')
       .eq('patient_id', patientId)
       .eq('doctor_id', doctorId)
       .eq('slot', slotPosition)
-      .gte('date_time', `${dateOnly}T00:00:00Z`) // Start of the day (UTC)
-      .lt('date_time', `${dateOnly}T23:59:59Z`); // End of the day (UTC)
+      .gte('date_time', `${dateOnly}T00:00:00Z`)
+      .lt('date_time', `${dateOnly}T23:59:59Z`);
 
     if (checkError) {
       console.error('Error checking existing appointments:', checkError);
@@ -198,22 +196,24 @@ async bookAppointment(
       };
     }
 
-    // Convert slotPosition to time string (e.g., "08:00 AM")
     const slotTime = BitOperationsUtil.slotToTimeString(slotPosition);
     const [timeStr, period] = slotTime.split(' ');
     const [hourStr, minuteStr] = timeStr.split(':');
     let hours = parseInt(hourStr, 10);
     const minutes = parseInt(minuteStr, 10);
 
-    // Convert 12h time to 24h time
     if (period === 'PM' && hours < 12) hours += 12;
     if (period === 'AM' && hours === 12) hours = 0;
 
-    // Compose final date_time string in ISO format
     const formattedDateTime = `${dateOnly}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00Z`;
 
-    // Insert new appointment
-    const { error: insertError } = await this.supabase
+    const qrText = `Doctor: ${doctorId}, Patient: ${patientId}, Date: ${formattedDateTime}`;
+
+    // Generate base64 image from QR text
+    const qrCodeImage = await QRCode.toDataURL(qrText);
+
+    // Insert appointment with just the text value in the DB
+    const { data: insertedData, error: insertError } = await this.supabase
       .from('appointment')
       .insert([
         {
@@ -222,12 +222,11 @@ async bookAppointment(
           date_time: formattedDateTime,
           slot: slotPosition,
           status: 'Confirmed',
-          qr_code: await this.generateQrCode(
-            `Doctor: ${doctorId}, Patient: ${patientId}, Date: ${formattedDateTime}`
-          ),
+          qr_code: qrText,
           created_at: new Date().toISOString(),
         },
-      ]);
+      ])
+      .select(); // to return the inserted row (optional)
 
     if (insertError) {
       console.error('Error booking appointment:', insertError);
@@ -237,6 +236,10 @@ async bookAppointment(
     return {
       status: 'success',
       message: 'Appointment booked successfully.',
+      data: {
+        appointment: insertedData?.[0],
+        qrCodeImage, // base64 string: can be used directly in an <img>
+      },
     };
   } catch (err) {
     console.error('Booking error:', err);
@@ -246,6 +249,7 @@ async bookAppointment(
     };
   }
 }
+
 
 
 

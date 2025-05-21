@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 import { Injectable } from '@nestjs/common';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { ConfigService } from '@nestjs/config';
@@ -9,10 +11,9 @@ export class UsersService {
   constructor(private configService: ConfigService) {
     this.supabase = createClient(
       this.configService.get<string>('SUPABASE_URL')!,
-      this.configService.get<string>('SUPABASE_KEY')!
+      this.configService.get<string>('SUPABASE_KEY')!,
     );
   }
-
   async createUser(userData: {
     email: string;
     password: string;
@@ -30,13 +31,13 @@ export class UsersService {
 
     if (error) {
       console.error('Erreur Supabase (createUser) :', error);
-      throw new Error('Erreur Supabase lors de la création de l\'utilisateur');
+      throw new Error("Erreur Supabase lors de la création de l'utilisateur");
     }
 
     return { data };
   }
 
-  async findByEmail(email: string) {
+  async finduserByEmail(email: string) {
     const { data, error } = await this.supabase
       .from('user')
       .select('*')
@@ -44,22 +45,22 @@ export class UsersService {
       .single();
 
     if (error) {
-      console.error('Erreur Supabase (findByEmail) :', error.message);
+      console.error('Erreur Supabase (email) :', error);
       return null;
     }
 
     return data;
   }
 
-    async findUserById(id: number) {
+  async findUserById(id: number) {
     const { data, error } = await this.supabase
       .from('user')
-      .select('*')
+      .select('id,first_name,family_name,phone,email,address,role')
       .eq('id', id)
       .single();
 
     if (error) {
-      console.error('Erreur Supabase (findUserById) :', error);
+      console.error('Erreur Supabase (id) :', error);
       return null;
     }
 

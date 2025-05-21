@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable prettier/prettier */
 import { Controller, Get, Query, Param } from '@nestjs/common'; 
 import { UsersService } from '../users/users.service';
 
@@ -7,7 +10,7 @@ export class UsersController {
 
   @Get('findUser')
   async findUser(@Query('email') email: string) {
-    const user = await this.usersService.findByEmail(email);
+    const user = await this.usersService.finduserByEmail(email);
     return user || { message: 'User not found' };
   }
 
