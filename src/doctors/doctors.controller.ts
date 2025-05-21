@@ -24,7 +24,7 @@ export class DoctorsController {
 */
 import { Controller, Get, Post, Body, Query, Param, Put, UseInterceptors } from '@nestjs/common';
 import { DoctorsService } from './doctors.service';
-import { CreateDoctorSlotsDto } from '../Appointments/dto/create_doctor_slot.dto';
+import { CreateDoctorSlotsDto } from '../appointments/dto/create_doctor_slot.dto';
 import { ParseIntPipe } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { extname } from 'path';

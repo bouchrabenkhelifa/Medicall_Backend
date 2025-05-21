@@ -1,10 +1,10 @@
-/* eslint-disable prettier/prettier */
- 
-/* eslint-disable prettier/prettier */
- 
- 
-/* eslint-disable prettier/prettier */
-import { Entity, PrimaryGeneratedColumn, Column} from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('appointment')
 export class Appointment {
@@ -26,14 +26,12 @@ export class Appointment {
   @Column({ name: 'status' })
   status: string;
 
-  @Column({ name: 'qr_code' })
-  qr_code: string;
+  @Column({ name: 'qr_code', nullable: true })
+  qrCode: string;
 
- @Column({ name: 'created_at' })
-  created_at: Date
+  @CreateDateColumn({ name: 'created_at' })
+  createdAt: Date;
 
-}
-export class AppointmentResponseDto {
-  status: string;
-  message: string;
+  @UpdateDateColumn({ name: 'updated_at' })
+  updatedAt: Date;
 }
