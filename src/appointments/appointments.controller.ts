@@ -1,9 +1,11 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable prettier/prettier */
+import { BadRequestException } from '@nestjs/common';
 import { Controller, Get, Query, Param, Post, Body, Delete, ParseIntPipe } from '@nestjs/common'; 
 import { AppointmentsService } from './appointments.service';
 import { BookAppointmentDto } from './dto/book_appointment.dto';
+
 
 @Controller('appointments')
 export class AppointmentsController {
@@ -38,5 +40,15 @@ export class AppointmentsController {
   async cancelAppointment(@Param('id', ParseIntPipe) id: number) {
     return this.appointmentsService.cancelAppointment(id);
   }
+
+    @Post('checkin')
+  async checkInAppointment(@Body('qr_code') qr_code: string) {
+    if (!qr_code) {
+      throw new BadRequestException('QR code is required');
+    }
+    return this.appointmentsService.checkInByQRCode(qr_code);
+  }
+
+  
 }
 

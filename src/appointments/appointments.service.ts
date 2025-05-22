@@ -290,6 +290,35 @@ async getConfirmedAppointmentsByPatient(patientId: number) {
 }
 
 
+async checkInByQRCode(qr_code: string) {
+  const { data: appointment, error } = await this.supabase
+    .from('appointment')
+    .select('*')
+    .eq('qr_code', qr_code)
+    .single();
+
+  if (error || !appointment) {
+    throw new Error('Appointment not found for this QR code');
+  }
+
+  if (appointment.status === 'Checked-in') {
+    return { message: 'Appointment already checked in' };
+  }
+
+  const { error: updateError } = await this.supabase
+    .from('appointment')
+    .update({ status: 'Checked-in' })
+    .eq('id', appointment.id);
+
+  if (updateError) {
+    throw new Error('Failed to update appointment status');
+  }
+
+  return { message: 'Check-in successful', appointmentId: appointment.id };
+}
+
+
+
 
 
 }
