@@ -29,7 +29,9 @@ async findAllDoctors() {
     .from('doctor')
     .select(`
       *,
-      clinic:clinic_id (address)  // Only select address from clinic
+      clinic:clinic_id (name,
+      address,
+      map_location)  // Only select address from clinic
     `);
 
   // Fetch users
@@ -51,7 +53,9 @@ async findAllDoctors() {
       photo: doc.photo,
       contact: doc.contact,
       experience: doc.experience,
+      name: doc.clinic?.name,
       address: doc.clinic?.address,
+      map: doc.clinic?.map_location,
       first_name: user?.first_name,
       family_name: user?.family_name,
       email: user?.email,
@@ -98,6 +102,7 @@ async getAvailableSlotsForDate(doctorId: number, date: Date): Promise<SlotTime [
       const month = String(formattedDate.getMonth() + 1).padStart(2, '0');
       const day = String(formattedDate.getDate()).padStart(2, '0');
       const dt = `${year}-${month}-${day}`;
+      console.log(doctorId)
       
       // 2. Get doctor's weekly schedule for this day
       const { data: weeklySlot, error: weeklyError } = await this.supabase
@@ -339,8 +344,11 @@ console.log(dto.workingDays)
       .eq('map_location', mapLocation)
       .maybeSingle();
 
-    if (error) throw new Error(`Failed to query clinic by mapLocation: ${error.message}`);
-    if (clinicByLocation) return clinicByLocation.id;
+    if (error) {
+      console.error(`Error querying clinic by mapLocation: ${error.message}`);
+    } else if (clinicByLocation) {
+      return clinicByLocation.id;
+    }
   }
 
   // 2. Try to find clinic by name and address (case-insensitive)
@@ -351,8 +359,11 @@ console.log(dto.workingDays)
     .ilike('address', address)
     .limit(1);
 
-  if (searchError) throw new Error(`Failed to search clinic: ${searchError.message}`);
-  if (clinics && clinics.length > 0) return clinics[0].id;
+  if (searchError) {
+    console.error(`Error searching clinic: ${searchError.message}`);
+  } else if (clinics && clinics.length > 0) {
+    return clinics[0].id;
+  }
 
   // 3. Create new clinic
   const { data: newClinic, error: insertError } = await this.supabase
@@ -361,10 +372,12 @@ console.log(dto.workingDays)
     .select('id')
     .single();
 
-  if (insertError) throw new Error(`Failed to insert clinic: ${insertError.message}`);
+  if (insertError) {
+    throw new Error(`Failed to insert clinic: ${insertError.message}`);
+  }
+
   return newClinic.id;
 }
-
 
  
 
