@@ -8,4 +8,10 @@ export class LoginDto {
   @IsNotEmpty()
   @IsString()
   password: string;
+
+
+  @IsNotEmpty()
+  @IsString()  
+  fcm_token: string;
+
 }
