@@ -44,7 +44,7 @@ async findAllDoctors() {
   // Merge data and flatten clinic address
   return doctorsWithClinics.map(doc => {
     const user = users.find(u => u.id === doc.user_id);
-    
+    console.log(doc.clinic?.address)
     return {
       user_id: doc.user_id,
       specialty: doc.specialty,
@@ -123,6 +123,7 @@ async getAvailableSlotsForDate(doctorId: number, date: Date): Promise<SlotTime [
         .from('appointment')
         .select('slot')
         .eq('doctor_id', doctorId)
+        .neq('status', 'Canceled')
         .gte('date_time', startOfDay)
         .lte('date_time', endOfDay);
       

@@ -163,7 +163,7 @@ export class AppointmentsService {
  async bookAppointment(
   bookingDto: BookAppointmentDto,
 ): Promise<{ status: string; message: string }> {
-  try {
+ 
     const { doctorId, patientId, date, slotPosition } = bookingDto;
 
     // Format the date to exclude time
@@ -193,6 +193,7 @@ export class AppointmentsService {
       };
     }
 
+
     // Convert slot position to hours and minutes using the utility function
     const slotTime = BitOperationsUtil.slotToTimeString(slotPosition);
     
@@ -214,39 +215,56 @@ export class AppointmentsService {
    const formattedDateTime = `${year}-${month}-${day} ${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`;
 
     console.log(formattedDateTime)
-    // Insert the new appointment into the database
-    const { data, error } = await this.supabase
-      .from('appointment') 
-      .insert([
-        {
-          doctor_id: doctorId,
-          patient_id: patientId,
-          date_time: formattedDateTime,
+
+    //Update or Insert appointment
+     const { data: existingAppointment } = await this.supabase
+      .from('appointment')
+      .select('*')
+      .eq('doctor_id', doctorId)
+      .eq('patient_id', patientId)
+      .eq('date_time', formattedDateTime)
+      .maybeSingle();
+
+    if (existingAppointment) {
+      // Update only the slot
+      const { data, error } = await this.supabase
+        .from('appointment')
+        .update({
           slot: slotPosition,
-          status: 'Confirmed',
-          qr_code: "test", 
-          created_at: new Date().toISOString(),
-        },
-      ]);
+        })
+        .eq('doctor_id', doctorId)
+        .eq('patient_id', patientId)
+        .eq('date_time', formattedDateTime)
+        .single();
 
-    if (error) {
-      console.error('Error booking appointment:', error);
-      throw new BadRequestException('Failed to book appointment.');
-    }
-    
-    return {
+      if (error) throw error;
+        return {
       status: 'success',
-      message: 'Appointment booked successfully.',
+      message: 'Appointment Rescheduled Successfully !',
     };
-  } catch (error) {
-    console.error('Booking error:', error);
+    } else {
+      // Insert new appointment
+      const { data, error } = await this.supabase
+        .from('appointment')
+        .insert([
+          {
+            doctor_id: doctorId,
+            patient_id: patientId,
+            date_time: formattedDateTime,
+            slot: slotPosition,
+            status: 'Confirmed',
+            qr_code: "test",
+            created_at: new Date().toISOString(),
+          },
+        ])
+        .single();
 
-    
-    return {
-      status: 'error',
-      message: 'An unexpected error occurred. Please try again later.',
+      if (error) throw error;
+      return {
+      status: 'success',
+      message: 'Appointment Booked Successfully !',
     };
-  }
+    }
 }
 
   // Function to cancel an existing appointment
@@ -254,10 +272,11 @@ export class AppointmentsService {
     try {
       // Find the appointment by ID
       const { data: appointment, error } = await this.supabase
-        .from('appointment') // Replace with your actual table name
+        .from('appointment')
         .select('*')
         .eq('id', id)
         .single();
+        
 
       if (error || !appointment) {
         throw new NotFoundException(`Appointment with ID ${id} not found.`);

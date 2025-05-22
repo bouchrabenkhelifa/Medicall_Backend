@@ -72,6 +72,7 @@ export class BitOperationsUtil {
       return bitString.substring(0, slotPosition) + '0' + bitString.substring(slotPosition, 48);
     }
   
+    
     /**
      * Gets all available slot positions from a bit string
      * @param bitString - The 48-bit string

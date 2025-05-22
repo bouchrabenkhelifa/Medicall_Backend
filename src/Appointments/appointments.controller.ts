@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-return */
 /* eslint-disable prettier/prettier */
-import { Controller, Get, Query, Param, Post, Body, Delete, ParseIntPipe } from '@nestjs/common'; 
+import { Controller, Get, Query, Param, Post, Body, ParseIntPipe, Patch } from '@nestjs/common'; 
 import { AppointmentsService } from './appointments.service';
 import { BookAppointmentDto } from './dto/book_appointment.dto';
 
@@ -29,7 +29,7 @@ async findById(@Param('id') id: number) {
     return this.appointmentsService.bookAppointment(bookingDto);
   }
 
-  @Delete('cancelBooking/:id')
+  @Patch('cancelBooking/:id')
   async cancelAppointment(@Param('id', ParseIntPipe) id: number) {
     return this.appointmentsService.cancelAppointment(id);
   }
