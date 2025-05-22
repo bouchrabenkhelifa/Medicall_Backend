@@ -5,10 +5,17 @@ import { AppointmentsService } from './appointments.service';
 export class AppointmentsController {
   constructor(private readonly appointmentsService :AppointmentsService) {}
 
-  @Get('all')
+@Get('test-reminder')
+async testReminder() {
+  return this.appointmentsService.sendReminderForTomorrow();
+}
+
+@Get('all')
   async findAllDoctors() {
     return this.appointmentsService.GetAll();
-  }
+}
+
+  
   @Get('by-doctor')
   async findByDoctor(@Query('doctorId') doctorId: number) {
     return this.appointmentsService.getAppointmentsByDoctor(doctorId);
