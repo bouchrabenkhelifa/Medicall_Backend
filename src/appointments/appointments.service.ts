@@ -270,50 +270,26 @@ export class AppointmentsService {
   }
 
 
-  async getConfirmedAppointmentsByPatient(patientId: number) {
+
+
+
+async getConfirmedAppointmentsByPatient(patientId: number) {
   const { data, error } = await this.supabase
-    .from('appointment')
-    .select(`
-      id,
-      doctor_id,
-      patient_id,
-      date_time,
-      status,
-      qr_code,
-      created_at,
-      patient(
-        user_id,
-        birthdate,
-        user(
-          phone,
-          first_name,
-          family_name
-        )
-      )
-    `)
+    .from('appointment_with_doctor')
+    .select('*')
     .eq('patient_id', patientId)
     .eq('status', 'Confirmed')
     .order('date_time', { ascending: true });
 
   if (error) {
     console.error(error);
-    throw new Error('Failed to fetch confirmed appointments for patient.');
+    throw new Error('Failed to fetch confirmed appointments with doctor info.');
   }
 
-  return data.map((appointment) => ({
-    id: appointment.id,
-    doctor_id: appointment.doctor_id,
-    patient_id: appointment.patient_id,
-    date_time: appointment.date_time,
-    status: appointment.status,
-    qr_code: appointment.qr_code,
-    created_at: appointment.created_at,
-    first_name: appointment.patient?.user?.first_name || null,
-    family_name: appointment.patient?.user?.family_name || null,
-    phone: appointment.patient?.user?.phone || null,
-  }));
+  return data;
 }
 
 
-  
+
+
 }
