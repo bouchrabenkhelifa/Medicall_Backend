@@ -82,7 +82,7 @@ export class PrescriptionsService {
     const { data: prescription, error } = await this.supabase
       .from('prescription')
       .insert({
-        name: prescriptionData.name,
+      
         appointment_id: prescriptionData.appointment_id,
         created_at: new Date().toISOString()
       })
@@ -91,7 +91,6 @@ export class PrescriptionsService {
     
     if (error) throw error;
     
-    // If medications are provided, create them
     if (prescriptionData.medications && prescriptionData.medications.length > 0) {
       const medicationsToInsert = prescriptionData.medications.map(med => ({
         name: med.name,
@@ -109,7 +108,6 @@ export class PrescriptionsService {
       if (medError) throw medError;
     }
     
-    // Return the newly created prescription with medications
     return this.findPrescriptionById(prescription.id);
   }
 
@@ -127,10 +125,8 @@ export class PrescriptionsService {
       }>;
     }
   ) {
-    // Check if the prescription exists
     await this.findPrescriptionById(id);
     
-    // Update the prescription name if provided
     if (prescriptionData.name) {
       const { error } = await this.supabase
         .from('prescription')
