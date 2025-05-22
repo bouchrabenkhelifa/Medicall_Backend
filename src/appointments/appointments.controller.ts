@@ -41,7 +41,20 @@ export class AppointmentsController {
     return this.appointmentsService.cancelAppointment(id);
   }
 
-    @Post('checkin')
+
+
+  // … existing endpoints
+
+  /** Doctor’s confirmed list */
+  @Get('doctor/:doctorId/confirmed')
+  async getConfirmedByDoctor(
+    @Param('doctorId', ParseIntPipe) doctorId: number
+  ) {
+    return this.appointmentsService.getConfirmedAppointmentsByDoctor(doctorId);
+  }
+
+  /** Check-in via QR code */
+  @Post('checkin')
   async checkInAppointment(@Body('qr_code') qr_code: string) {
     if (!qr_code) {
       throw new BadRequestException('QR code is required');

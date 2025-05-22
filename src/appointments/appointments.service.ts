@@ -290,34 +290,81 @@ async getConfirmedAppointmentsByPatient(patientId: number) {
 }
 
 
-async checkInByQRCode(qr_code: string) {
-  const { data: appointment, error } = await this.supabase
-    .from('appointment')
-    .select('*')
-    .eq('qr_code', qr_code)
-    .single();
 
-  if (error || !appointment) {
-    throw new Error('Appointment not found for this QR code');
+
+ async getConfirmedAppointmentsByDoctor(doctorId: number) {
+    const { data, error } = await this.supabase
+      .from('appointment')
+      .select(`
+        id,
+        doctor_id,
+        patient_id,
+        date_time,
+        status,
+        qr_code,
+        created_at,
+        patient(
+          user_id,
+          user (
+            first_name,
+            family_name,
+            phone
+          )
+        )
+      `)
+      .eq('doctor_id', doctorId)
+      .eq('status', 'Confirmed')
+      .order('date_time', { ascending: true });
+
+    if (error) {
+      console.error(error);
+      throw new Error('Failed to fetch confirmed appointments for doctor.');
+    }
+
+    return data.map((apt) => ({
+      id: apt.id,
+      doctor_id: apt.doctor_id,
+      patient_id: apt.patient_id,
+      date_time: apt.date_time,
+      status: apt.status,
+      qr_code: apt.qr_code,
+      created_at: apt.created_at,
+      first_name: apt.patient?.user?.first_name || null,
+      family_name: apt.patient?.user?.family_name || null,
+      phone: apt.patient?.user?.phone || null,
+    }));
   }
 
-  if (appointment.status === 'Checked-in') {
-    return { message: 'Appointment already checked in' };
+  /** Scan-in (check in) via QR code → mark as Completed */
+  async checkInByQRCode(qr_code: string) {
+    // fetch the appointment by qr_code
+    const { data: appointment, error: fetchError } = await this.supabase
+      .from('appointment')
+      .select('*')
+      .eq('qr_code', qr_code)
+      .single();
+
+    if (fetchError || !appointment) {
+      throw new Error('Appointment not found for this QR code');
+    }
+
+    if (appointment.status !== 'Confirmed') {
+      return { message: 'Appointment is not in a Confirmed state' };
+    }
+
+    // update status → Completed
+    const { error: updateError } = await this.supabase
+      .from('appointment')
+      .update({ status: 'Completed' })
+      .eq('id', appointment.id);
+
+    if (updateError) {
+      console.error(updateError);
+      throw new Error('Failed to update appointment status');
+    }
+
+    return { message: 'Check-in successful', appointmentId: appointment.id };
   }
-
-  const { error: updateError } = await this.supabase
-    .from('appointment')
-    .update({ status: 'Checked-in' })
-    .eq('id', appointment.id);
-
-  if (updateError) {
-    throw new Error('Failed to update appointment status');
-  }
-
-  return { message: 'Check-in successful', appointmentId: appointment.id };
-}
-
-
 
 
 
